@@ -19,10 +19,10 @@ SCENE_FOLDER = "assets/scenes"
 
 # --- Character Covers ---
 CHARACTERS = {
-    "Ball_Yellow": "bowtie_cover.png",
-    "bunny": "bunny_cover.png",
-    "pinkgirl": "pinkgirl_cover.png",
-    "Raccoon": "raccoon_cover.png"
+    "Ball_Yellow": {"cover": "bowtie_cover.png", "folder": "Ball_Yellow"},
+    "bunny": {"cover": "bunny_cover.png", "folder": "bunny"},
+    "pinkgirl": {"cover": "pinkgirl_cover.png", "folder": "pinkgirl"},
+    "Raccoon": {"cover": "raccoon_cover.png", "folder": "Raccoon"}
 }
 
 # --- Scene Thumbnails ---
@@ -36,110 +36,131 @@ SCENES = {
 CHARACTER_SIZE = (100, 100)
 SCENE_SIZE = (180, 100)
 
-# --- Load Random Cover Background ---
 def get_random_background():
     files = [f for f in os.listdir(SCENE_FOLDER) if f.endswith(".png")]
     bg = pygame.image.load(os.path.join(SCENE_FOLDER, random.choice(files))).convert()
     return pygame.transform.scale(bg, (WIDTH, HEIGHT))
 
-
-# --- UI Layout ---
 def layout_items(items, start_x, y, size, gap):
     positions = {}
     x = start_x
-    for key, image in items.items():
+    for key in items:
         positions[key] = pygame.Rect(x, y, *size)
         x += size[0] + gap
     return positions
 
+def load_character_images():
+    images = {}
+    for name, data in CHARACTERS.items():
+        path = os.path.join(CHARACTER_FOLDER, data["folder"], data["cover"])
+        image = pygame.image.load(path).convert_alpha()
+        images[name] = pygame.transform.scale(image, CHARACTER_SIZE)
+    return images
 
-def load_images(folder, items, size):
-    return {key: pygame.transform.scale(
-        pygame.image.load(os.path.join(folder, filename)), size)
-        for key, filename in items.items()}
+def load_scene_images():
+    images = {}
+    for name, filename in SCENES.items():
+        path = os.path.join(SCENE_FOLDER, filename)
+        image = pygame.image.load(path).convert_alpha()
+        images[name] = pygame.transform.scale(image, SCENE_SIZE)
+    return images
 
-
-# --- Draw Screen ---
-def draw(bg, char_images, scene_images, selected_char, selected_scene):
-    screen.blit(bg, (0, 0))
-
-    # Titles
-    title = font.render("Select Your Character", True, (0, 0, 0))
-    screen.blit(title, (WIDTH // 2 - title.get_width() // 2, 40))
-
-    title2 = font.render("Choose Scene", True, (0, 0, 0))
-    screen.blit(title2, (WIDTH // 2 - title2.get_width() // 2, 250))
-
-    # Characters
-    for name, rect in char_positions.items():
-        screen.blit(char_images[name], rect)
-        if name == selected_char:
-            pygame.draw.rect(screen, (255, 100, 100), rect, 5)
-        label = small_font.render(name.replace("_", " ").capitalize(), True, (0, 0, 0))
-        screen.blit(label, (rect.x, rect.bottom + 5))
-
-    # Scenes
-    for name, rect in scene_positions.items():
-        screen.blit(scene_images[name], rect)
-        if name == selected_scene:
-            pygame.draw.rect(screen, (100, 150, 255), rect, 5)
-        label = small_font.render(name.capitalize(), True, (0, 0, 0))
-        screen.blit(label, (rect.x, rect.bottom + 5))
-
-    # Start button
-    if selected_char and selected_scene:
-        pygame.draw.rect(screen, (0, 180, 0), start_button_rect)
+def draw_button(rect, color, hover_color, text, mouse_pos):
+    if rect.collidepoint(mouse_pos):
+        pygame.draw.rect(screen, hover_color, rect)
     else:
-        pygame.draw.rect(screen, (120, 120, 120), start_button_rect)
+        pygame.draw.rect(screen, color, rect)
+    text_surface = font.render(text, True, (255, 255, 255))
+    screen.blit(text_surface, (rect.centerx - text_surface.get_width() // 2,
+                               rect.centery - text_surface.get_height() // 2))
 
-    button_text = font.render("Start Game", True, (255, 255, 255))
-    screen.blit(button_text, (start_button_rect.centerx - button_text.get_width() // 2,
-                              start_button_rect.centery - button_text.get_height() // 2))
-
+def show_loading_screen():
+    screen.fill((0, 0, 0))
+    loading_text = font.render("Loading...", True, (255, 255, 255))
+    screen.blit(loading_text, (WIDTH // 2 - loading_text.get_width() // 2,
+                               HEIGHT // 2 - loading_text.get_height() // 2))
+    pygame.display.flip()
+    pygame.time.delay(2000)
 
 # --- Initialization ---
-char_images = load_images(CHARACTER_FOLDER, CHARACTERS, CHARACTER_SIZE)
-scene_images = load_images(SCENE_FOLDER, SCENES, SCENE_SIZE)
+char_images = load_character_images()
+scene_images = load_scene_images()
 
 char_positions = layout_items(CHARACTERS, 90, 100, CHARACTER_SIZE, 50)
 scene_positions = layout_items(SCENES, 60, 310, SCENE_SIZE, 30)
 start_button_rect = pygame.Rect(WIDTH // 2 - 100, 500, 200, 50)
 
 bg_cover = get_random_background()
-
 selected_character = None
 selected_scene = None
 
-# --- Main Loop ---
+def draw(mouse_pos):
+    screen.blit(bg_cover, (0, 0))
+
+    title = font.render("Select Your Character", True, (0, 0, 0))
+    screen.blit(title, (WIDTH // 2 - title.get_width() // 2, 40))
+
+    title2 = font.render("Choose Scene", True, (0, 0, 0))
+    screen.blit(title2, (WIDTH // 2 - title2.get_width() // 2, 250))
+
+    for name, rect in char_positions.items():
+        screen.blit(char_images[name], rect)
+        if name == selected_character:
+            pygame.draw.rect(screen, (255, 100, 100), rect, 5)
+        elif rect.collidepoint(mouse_pos):
+            pygame.draw.rect(screen, (255, 200, 200), rect, 3)
+
+        label = small_font.render(name.replace("_", " ").capitalize(), True, (0, 0, 0))
+        screen.blit(label, (rect.x, rect.bottom + 5))
+
+    for name, rect in scene_positions.items():
+        screen.blit(scene_images[name], rect)
+        if name == selected_scene:
+            pygame.draw.rect(screen, (100, 150, 255), rect, 5)
+        elif rect.collidepoint(mouse_pos):
+            pygame.draw.rect(screen, (180, 220, 255), rect, 3)
+
+        label = small_font.render(name.capitalize(), True, (0, 0, 0))
+        screen.blit(label, (rect.x, rect.bottom + 5))
+
+    if selected_character and selected_scene:
+        draw_button(start_button_rect, (0, 180, 0), (0, 220, 0), "Start Game", mouse_pos)
+    else:
+        draw_button(start_button_rect, (100, 100, 100), (150, 150, 150), "Start Game", mouse_pos)
+
 def main():
     global selected_character, selected_scene
-    running = True
-    while running:
-        clock.tick(60)
-        draw(bg_cover, char_images, scene_images, selected_character, selected_scene)
+    while True:
+        mouse_pos = pygame.mouse.get_pos()
+        draw(mouse_pos)
         pygame.display.flip()
+        clock.tick(60)
 
         for event in pygame.event.get():
             if event.type == pygame.QUIT:
                 pygame.quit()
                 sys.exit()
-
             if event.type == pygame.MOUSEBUTTONDOWN:
-                pos = pygame.mouse.get_pos()
-
                 for name, rect in char_positions.items():
-                    if rect.collidepoint(pos):
+                    if rect.collidepoint(event.pos):
                         selected_character = name
 
                 for name, rect in scene_positions.items():
-                    if rect.collidepoint(pos):
+                    if rect.collidepoint(event.pos):
                         selected_scene = name
 
-                if start_button_rect.collidepoint(pos) and selected_character and selected_scene:
+                if (start_button_rect.collidepoint(event.pos)
+                        and selected_character and selected_scene):
+                    show_loading_screen()
                     return selected_character, selected_scene
 
-
 if __name__ == "__main__":
-    char, scene = main()
-    import play_level
-    play_level.main(char, scene)
+    while True:
+        char, scene = main()
+        import play_level
+        result = play_level.main(char, scene)
+        if result == "back_to_menu":
+            selected_character = None
+            selected_scene = None
+        elif result == "quit":
+            break

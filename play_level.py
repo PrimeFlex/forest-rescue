@@ -83,9 +83,34 @@ class Star(pygame.sprite.Sprite):
 def show_results(score):
     screen.fill((0, 0, 0))
     result_text = font.render(f"You collected {score} stars! 🥇", True, (255, 255, 255))
-    screen.blit(result_text, (WIDTH // 2 - result_text.get_width() // 2, HEIGHT // 2))
+    screen.blit(result_text, (WIDTH // 2 - result_text.get_width() // 2, HEIGHT // 2 - 100))
+
+    # Buttons
+    play_again_rect = pygame.Rect(WIDTH // 2 - 100, HEIGHT // 2, 200, 50)
+    back_to_menu_rect = pygame.Rect(WIDTH // 2 - 100, HEIGHT // 2 + 70, 200, 50)
+
+    pygame.draw.rect(screen, (0, 180, 0), play_again_rect)
+    pygame.draw.rect(screen, (180, 0, 0), back_to_menu_rect)
+
+    play_again_text = font.render("Play Again", True, (255, 255, 255))
+    back_to_menu_text = font.render("Back to Menu", True, (255, 255, 255))
+
+    screen.blit(play_again_text, (play_again_rect.centerx - play_again_text.get_width() // 2,
+                                  play_again_rect.centery - play_again_text.get_height() // 2))
+    screen.blit(back_to_menu_text, (back_to_menu_rect.centerx - back_to_menu_text.get_width() // 2,
+                                    back_to_menu_rect.centery - back_to_menu_text.get_height() // 2))
+
     pygame.display.flip()
-    pygame.time.delay(5000)
+
+    while True:
+        for event in pygame.event.get():
+            if event.type == pygame.QUIT:
+                return "quit"
+            elif event.type == pygame.MOUSEBUTTONDOWN:
+                if play_again_rect.collidepoint(event.pos):
+                    return "play_again"
+                elif back_to_menu_rect.collidepoint(event.pos):
+                    return "back_to_menu"
 
 # Main game loop
 def main(character_name, scene_name):
@@ -117,7 +142,8 @@ def main(character_name, scene_name):
 
         for event in pygame.event.get():
             if event.type == pygame.QUIT:
-                running = False
+                pygame.mixer.music.stop()
+                return "quit"
 
         keys = pygame.key.get_pressed()
         all_sprites.update(keys)
@@ -145,10 +171,10 @@ def main(character_name, scene_name):
             running = False
 
     pygame.mixer.music.stop()
-    show_results(score)
-    pygame.quit()
-    sys.exit()
+    return show_results(score)
 
 # Test mode
 if __name__ == "__main__":
-    main("bunny", "evening")
+    result = main("bunny", "evening")
+    if result == "play_again":
+        main("bunny", "evening")
